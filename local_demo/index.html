@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>City Care Hospital — Local Demo</title>
+  <style>
+    :root { --blue:#0b6e99; --green:#1b9a6a; --bg:#f4f8fb; --danger:#d64545; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Segoe UI",system-ui,sans-serif; background:var(--bg); color:#1a2b3c; }
+    .app { max-width:480px; margin:0 auto; min-height:100vh; background:#fff; box-shadow:0 0 24px rgba(0,0,0,.06); }
+    header { background:linear-gradient(135deg,var(--blue),var(--green)); color:#fff; padding:18px 16px; }
+    header h1 { margin:0; font-size:1.25rem; }
+    header p { margin:4px 0 0; opacity:.9; font-size:.9rem; }
+    .screen { display:none; padding:16px; }
+    .screen.active { display:block; }
+    .btn { display:block; width:100%; border:0; border-radius:12px; padding:14px; font-size:1rem; font-weight:600; cursor:pointer; margin-top:10px; }
+    .btn-primary { background:var(--blue); color:#fff; }
+    .btn-green { background:var(--green); color:#fff; }
+    .btn-outline { background:#fff; border:1px solid #c5d5e0; color:var(--blue); }
+    .btn:disabled { opacity:.5; }
+    input, select { width:100%; padding:12px; border:1px solid #c5d5e0; border-radius:12px; margin:6px 0 12px; font-size:1rem; }
+    label { font-size:.9rem; color:#5a6b7c; }
+    .card { border:1px solid #d7e3ec; border-radius:14px; padding:14px; margin:10px 0; background:#fbfdff; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .token { font-size:3rem; font-weight:800; color:var(--blue); text-align:center; }
+    .big { font-size:2.2rem; font-weight:800; text-align:center; }
+    .muted { color:#5a6b7c; font-size:.9rem; }
+    .row { display:flex; gap:8px; }
+    .row .btn { flex:1; }
+    .stat { text-align:center; padding:12px; background:#eef7fb; border-radius:12px; }
+    .stat b { display:block; font-size:1.6rem; color:var(--blue); }
+    .tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+    .tabs button { flex:1; min-width:90px; padding:10px; border-radius:999px; border:1px solid #c5d5e0; background:#fff; cursor:pointer; }
+    .tabs button.on { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .banner { background:#fff3cd; padding:8px 12px; border-radius:8px; margin-bottom:10px; font-size:.9rem; }
+    .list-item { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .pill { font-size:.75rem; background:#e8f7ef; color:var(--green); padding:2px 8px; border-radius:999px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>City Care Hospital</h1>
+      <p id="hdrSub">Local demo · no Firebase · no Flutter SDK</p>
+    </header>
+
+    <div id="login" class="screen active">
+      <div class="banner">Runs fully in your browser. Same token/queue logic as the Flutter app.</div>
+      <label>Demo role</label>
+      <select id="role">
+        <option value="patient">patient</option>
+        <option value="receptionist">receptionist</option>
+        <option value="doctor">doctor</option>
+        <option value="admin">admin</option>
+      </select>
+      <label>Mobile (+92)</label>
+      <input id="phone" value="03001234567" />
+      <label>OTP</label>
+      <input id="otp" value="123456" />
+      <button class="btn btn-primary" onclick="login()">Verify & continue</button>
+    </div>
+
+    <div id="home" class="screen">
+      <p id="greet"></p>
+      <div class="card" id="upcomingCard" style="display:none">
+        <div class="muted">Upcoming appointment</div>
+        <div class="token" id="upToken">—</div>
+        <div id="upMeta" class="muted"></div>
+        <div class="row">
+          <button class="btn btn-outline" onclick="openQueue()">Live queue</button>
+          <button class="btn btn-primary" onclick="show('appts')">Details</button>
+        </div>
+      </div>
+      <h3>Departments</h3>
+      <div class="grid" id="depts"></div>
+      <button class="btn btn-outline" onclick="show('appts')">My appointments</button>
+      <button class="btn btn-outline" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="doctors" class="screen">
+      <button class="btn btn-outline" onclick="show('home')">← Back</button>
+      <h3 id="deptTitle">Doctors</h3>
+      <div id="docList"></div>
+    </div>
+
+    <div id="book" class="screen">
+      <button class="btn btn-outline" onclick="show('doctors')">← Back</button>
+      <h3 id="bookTitle">Book</h3>
+      <label>Date</label>
+      <select id="bookDate"></select>
+      <p class="muted" id="capacity"></p>
+      <button class="btn btn-primary" onclick="confirmBook()">Confirm booking</button>
+    </div>
+
+    <div id="confirm" class="screen">
+      <h3 style="text-align:center;color:var(--green)">Booking confirmed</h3>
+      <div class="token" id="confToken">T-01</div>
+      <p id="confMeta" style="text-align:center"></p>
+      <button class="btn btn-primary" onclick="openQueue()">Open live queue</button>
+      <button class="btn btn-outline" onclick="show('home')">Home</button>
+    </div>
+
+    <div id="queue" class="screen">
+      <button class="btn btn-outline" onclick="show('home')">← Home</button>
+      <h3 style="text-align:center" id="qDoctor"></h3>
+      <p class="muted" style="text-align:center" id="qDate"></p>
+      <div class="card"><div class="muted" style="text-align:center">Now serving</div><div class="big" style="color:var(--green)" id="qServing">—</div></div>
+      <div class="card"><div class="muted" style="text-align:center">Your token</div><div class="token" id="qMine">—</div></div>
+      <div class="grid">
+        <div class="stat"><b id="qAhead">0</b>Patients ahead</div>
+        <div class="stat"><b id="qEta">0</b>Est. wait (min)</div>
+      </div>
+      <p class="muted" style="text-align:center;margin-top:12px" id="qStatus"></p>
+    </div>
+
+    <div id="appts" class="screen">
+      <button class="btn btn-outline" onclick="show('home')">← Home</button>
+      <h3>My appointments</h3>
+      <div id="apptList"></div>
+    </div>
+
+    <div id="reception" class="screen">
+      <h3>Reception desk</h3>
+      <label>Doctor</label>
+      <select id="rDoc" onchange="renderReception()"></select>
+      <button class="btn btn-green" onclick="walkIn()">Book walk-in / phone</button>
+      <div id="rQueue"></div>
+      <button class="btn btn-outline" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="doctor" class="screen">
+      <h3>Doctor — Today</h3>
+      <div class="card"><div class="muted" style="text-align:center">Now serving</div><div class="big" style="color:#fff;background:var(--blue);border-radius:12px;padding:12px" id="dServing">—</div></div>
+      <button class="btn btn-primary" onclick="callNext()">Call next</button>
+      <button class="btn btn-outline" onclick="togglePause()">Pause / break</button>
+      <div id="dList"></div>
+      <button class="btn btn-outline" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="admin" class="screen">
+      <h3>Admin overview</h3>
+      <div class="grid" id="kpis"></div>
+      <div id="adminDocs"></div>
+      <button class="btn btn-outline" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const today = () => new Date().toISOString().slice(0,10);
+    const fmt = n => 'T-' + String(n).padStart(2,'0');
+
+    const store = {
+      role: 'patient',
+      user: null,
+      departments: [
+        { id:'dept_cardio', name:'Cardiology' },
+        { id:'dept_gm', name:'General Medicine' },
+        { id:'dept_pedia', name:'Pediatrics' },
+        { id:'dept_ortho', name:'Orthopedics' },
+      ],
+      doctors: [
+        { id:'doc_ahmed', departmentId:'dept_cardio', name:'Dr. Ahmed Khan', qualification:'MBBS, FCPS', fee:2500, avg:12, max:30 },
+        { id:'doc_sara', departmentId:'dept_gm', name:'Dr. Sara Malik', qualification:'MBBS, MD', fee:1800, avg:10, max:40 },
+        { id:'doc_bilal', departmentId:'dept_pedia', name:'Dr. Bilal Hussain', qualification:'MBBS, DCH', fee:1500, avg:10, max:35 },
+      ],
+      queues: {},
+      appointments: [],
+      selectedDept: null,
+      selectedDoctor: null,
+      currentApptId: null,
+    };
+
+    function qKey(docId, date){ return docId + '_' + date; }
+    function ensureQueue(docId, date){
+      const k = qKey(docId, date);
+      if (!store.queues[k]) {
+        const d = store.doctors.find(x => x.id === docId);
+        store.queues[k] = { current: 3, last: 8, max: d.max, avg: d.avg, paused: false };
+      }
+      return store.queues[k];
+    }
+
+    // seed demo appointment for patient
+    (function seed(){
+      const d = today();
+      ensureQueue('doc_ahmed', d);
+      store.appointments.push({
+        id:'appt_demo', doctorId:'doc_ahmed', doctorName:'Dr. Ahmed Khan',
+        patientName:'Ali Raza', date:d, token:7, status:'BOOKED', source:'app'
+      });
+    })();
+
+    function show(id){
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if (id==='home') renderHome();
+      if (id==='appts') renderAppts();
+      if (id==='queue') renderQueue();
+      if (id==='reception') renderReception();
+      if (id==='doctor') renderDoctor();
+      if (id==='admin') renderAdmin();
+    }
+
+    function login(){
+      const otp = document.getElementById('otp').value.trim();
+      if (otp.length < 4) return alert('Enter OTP (any 4+ digits)');
+      store.role = document.getElementById('role').value;
+      store.user = { name: store.role==='patient'?'Ali Raza':store.role, phone: document.getElementById('phone').value };
+      document.getElementById('hdrSub').textContent = 'Logged in as ' + store.role + ' · Local backend';
+      if (store.role==='patient') show('home');
+      else if (store.role==='receptionist') show('reception');
+      else if (store.role==='doctor') show('doctor');
+      else show('admin');
+    }
+    function logout(){ store.user=null; document.getElementById('hdrSub').textContent='Local demo · no Firebase · no Flutter SDK'; show('login'); }
+
+    function renderHome(){
+      document.getElementById('greet').textContent = 'Assalam-o-Alaikum, ' + store.user.name;
+      const up = store.appointments.find(a => ['BOOKED','CHECKED_IN','IN_PROGRESS'].includes(a.status));
+      const card = document.getElementById('upcomingCard');
+      if (up){
+        card.style.display='block';
+        store.currentApptId = up.id;
+        document.getElementById('upToken').textContent = fmt(up.token);
+        document.getElementById('upMeta').textContent = up.doctorName + ' · ' + up.date;
+      } else card.style.display='none';
+      document.getElementById('depts').innerHTML = store.departments.map(d =>
+        `<div class="card" style="cursor:pointer" onclick="openDept('${d.id}')"><b>${d.name}</b></div>`
+      ).join('');
+    }
+
+    function openDept(id){
+      store.selectedDept = id;
+      document.getElementById('deptTitle').textContent = store.departments.find(d=>d.id===id).name;
+      const docs = store.doctors.filter(d=>d.departmentId===id);
+      document.getElementById('docList').innerHTML = docs.map(d => `
+        <div class="card">
+          <b>${d.name}</b><div class="muted">${d.qualification}<br>Fee Rs ${d.fee} · ~${d.avg} min</div>
+          <button class="btn btn-primary" onclick="openBook('${d.id}')">Book appointment</button>
+        </div>`).join('');
+      show('doctors');
+    }
+
+    function openBook(id){
+      store.selectedDoctor = store.doctors.find(d=>d.id===id);
+      document.getElementById('bookTitle').textContent = store.selectedDoctor.name;
+      const sel = document.getElementById('bookDate');
+      sel.innerHTML = '';
+      for (let i=0;i<7;i++){
+        const dt = new Date(); dt.setDate(dt.getDate()+i);
+        const key = dt.toISOString().slice(0,10);
+        const q = ensureQueue(id, key);
+        const rem = Math.max(0, q.max - q.last);
+        const opt = document.createElement('option');
+        opt.value = key; opt.textContent = key + ' · ' + rem + ' tokens left';
+        opt.disabled = rem<=0; sel.appendChild(opt);
+      }
+      updateCapacity();
+      sel.onchange = updateCapacity;
+      show('book');
+    }
+    function updateCapacity(){
+      const date = document.getElementById('bookDate').value;
+      const q = ensureQueue(store.selectedDoctor.id, date);
+      document.getElementById('capacity').textContent = 'Remaining: ' + Math.max(0,q.max-q.last) + ' / max ' + q.max;
+    }
+
+    function confirmBook(){
+      const date = document.getElementById('bookDate').value;
+      const doc = store.selectedDoctor;
+      const dup = store.appointments.some(a => a.doctorId===doc.id && a.date===date && a.patientName===store.user.name && !['CANCELLED','COMPLETED','NO_SHOW'].includes(a.status));
+      if (dup) return alert('Already booked with this doctor today.');
+      const q = ensureQueue(doc.id, date);
+      if (q.last >= q.max) return alert('No tokens left.');
+      q.last += 1;
+      const appt = {
+        id: 'appt_' + Date.now(), doctorId: doc.id, doctorName: doc.name,
+        patientName: store.user.name, date, token: q.last, status:'BOOKED', source:'app'
+      };
+      store.appointments.push(appt);
+      store.currentApptId = appt.id;
+      document.getElementById('confToken').textContent = fmt(appt.token);
+      document.getElementById('confMeta').textContent = appt.doctorName + ' · ' + appt.date + ' · Fee Rs ' + doc.fee;
+      show('confirm');
+    }
+
+    function openQueue(){
+      if (!store.currentApptId) {
+        const up = store.appointments.find(a => ['BOOKED','CHECKED_IN','IN_PROGRESS'].includes(a.status));
+        if (up) store.currentApptId = up.id;
+      }
+      show('queue');
+    }
+
+    function patientsAhead(appt){
+      return store.appointments.filter(a =>
+        a.doctorId===appt.doctorId && a.date===appt.date && a.token < appt.token &&
+        ['BOOKED','CHECKED_IN'].includes(a.status)
+      ).length;
+    }
+
+    function renderQueue(){
+      const appt = store.appointments.find(a => a.id === store.currentApptId);
+      if (!appt){ document.getElementById('qMine').textContent='—'; return; }
+      const q = ensureQueue(appt.doctorId, appt.date);
+      const ahead = patientsAhead(appt);
+      document.getElementById('qDoctor').textContent = appt.doctorName;
+      document.getElementById('qDate').textContent = appt.date + (q.paused ? ' · PAUSED' : '');
+      document.getElementById('qServing').textContent = q.current ? fmt(q.current) : '—';
+      document.getElementById('qMine').textContent = fmt(appt.token);
+      document.getElementById('qAhead').textContent = ahead;
+      document.getElementById('qEta').textContent = ahead * q.avg;
+      document.getElementById('qStatus').textContent = 'Status: ' + appt.status;
+    }
+
+    function renderAppts(){
+      document.getElementById('apptList').innerHTML = store.appointments.map(a => `
+        <div class="card list-item">
+          <div><b>${fmt(a.token)}</b> · ${a.doctorName}<div class="muted">${a.date} · ${a.status}</div></div>
+          <button class="btn btn-outline" style="width:auto;margin:0" onclick="store.currentApptId='${a.id}'; openQueue()">Queue</button>
+        </div>`).join('') || '<p class="muted">No appointments</p>';
+    }
+
+    function renderReception(){
+      const sel = document.getElementById('rDoc');
+      if (!sel.options.length){
+        store.doctors.forEach(d => { const o=document.createElement('option'); o.value=d.id; o.textContent=d.name; sel.appendChild(o); });
+      }
+      const docId = sel.value || store.doctors[0].id;
+      const d = today();
+      const list = store.appointments.filter(a => a.doctorId===docId && a.date===d).sort((a,b)=>a.token-b.token);
+      document.getElementById('rQueue').innerHTML = '<h4>Today queue</h4>' + list.map(a => `
+        <div class="card list-item">
+          <div><b>${fmt(a.token)}</b> ${a.patientName}<div class="muted">${a.status} · ${a.source}</div></div>
+          <div>
+            <button class="btn btn-outline" style="width:auto;margin:0 0 4px" onclick="setStatus('${a.id}','CHECKED_IN');renderReception()">Check-in</button>
+            <button class="btn btn-outline" style="width:auto;margin:0" onclick="setStatus('${a.id}','NO_SHOW');renderReception()">No-show</button>
+          </div>
+        </div>`).join('') || '<p class="muted">Empty queue</p>';
+    }
+    function walkIn(){
+      const docId = document.getElementById('rDoc').value;
+      const doc = store.doctors.find(d=>d.id===docId);
+      const date = today();
+      const q = ensureQueue(docId, date);
+      if (q.last >= q.max) return alert('No tokens left');
+      q.last += 1;
+      store.appointments.push({
+        id:'appt_'+Date.now(), doctorId:docId, doctorName:doc.name,
+        patientName:'Walk-in Patient', date, token:q.last, status:'BOOKED', source:'walk_in'
+      });
+      renderReception();
+      alert('Booked ' + fmt(q.last));
+    }
+    function setStatus(id, status){
+      const a = store.appointments.find(x=>x.id===id); if (a) a.status = status;
+    }
+
+    function renderDoctor(){
+      const docId = 'doc_ahmed';
+      const date = today();
+      const q = ensureQueue(docId, date);
+      document.getElementById('dServing').textContent = q.current ? fmt(q.current) : '—';
+      const list = store.appointments.filter(a=>a.doctorId===docId && a.date===date).sort((a,b)=>a.token-b.token);
+      document.getElementById('dList').innerHTML = list.map(a => `
+        <div class="card list-item">
+          <div><b>${fmt(a.token)}</b> ${a.patientName} <span class="pill">${a.status}</span></div>
+          ${a.status==='IN_PROGRESS' ? `<button class="btn btn-green" style="width:auto;margin:0" onclick="setStatus('${a.id}','COMPLETED');renderDoctor()">Done</button>` : ''}
+        </div>`).join('');
+    }
+    function callNext(){
+      const docId='doc_ahmed'; const date=today();
+      const q = ensureQueue(docId, date);
+      if (q.paused) return alert('Queue paused');
+      store.appointments.forEach(a => {
+        if (a.doctorId===docId && a.date===date && a.status==='IN_PROGRESS') a.status='COMPLETED';
+      });
+      const next = store.appointments
+        .filter(a => a.doctorId===docId && a.date===date && ['BOOKED','CHECKED_IN'].includes(a.status))
+        .sort((a,b)=>a.token-b.token)[0];
+      if (!next) return alert('No more patients');
+      next.status='IN_PROGRESS';
+      q.current = next.token;
+      renderDoctor();
+    }
+    function togglePause(){
+      const q = ensureQueue('doc_ahmed', today());
+      q.paused = !q.paused;
+      alert(q.paused ? 'Paused' : 'Resumed');
+      renderDoctor();
+    }
+
+    function renderAdmin(){
+      document.getElementById('kpis').innerHTML = [
+        ['Doctors', store.doctors.length],
+        ['Departments', store.departments.length],
+        ['Appointments', store.appointments.length],
+        ['Revenue', store.appointments.reduce((s,a)=>s+(store.doctors.find(d=>d.id===a.doctorId)?.fee||0),0)]
+      ].map(([k,v]) => `<div class="stat"><b>${v}</b>${k}</div>`).join('');
+      document.getElementById('adminDocs').innerHTML = '<h4>Doctors</h4>' + store.doctors.map(d =>
+        `<div class="card"><b>${d.name}</b><div class="muted">${d.qualification} · Rs ${d.fee} · max ${d.max}/day</div></div>`
+      ).join('');
+    }
+
+    // auto-refresh queue view every 2s when open
+    setInterval(() => {
+      if (document.getElementById('queue').classList.contains('active')) renderQueue();
+      if (document.getElementById('doctor').classList.contains('active')) renderDoctor();
+    }, 2000);
+  </script>
+</body>
+</html>

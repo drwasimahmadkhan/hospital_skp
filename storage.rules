@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource != null
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function underMaxSize(maxBytes) {
+      return request.resource != null
+        && request.resource.size < maxBytes;
+    }
+
+    // Doctor profile photos — admin uploads; public read for app listing
+    match /doctors/{doctorId}/profile/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && isImage()
+        && underMaxSize(5 * 1024 * 1024)
+        && fileName.matches('(profile|avatar)\\.(jpg|jpeg|png|webp)');
+    }
+
+    // Department banners (optional)
+    match /departments/{departmentId}/{fileName} {
+      allow read: if true;
+      allow write: if isSignedIn()
+        && isImage()
+        && underMaxSize(3 * 1024 * 1024);
+    }
+
+    // Patient-uploaded documents — owner only (e.g. previous reports)
+    match /patients/{userId}/documents/{fileName} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isSignedIn()
+        && request.auth.uid == userId
+        && underMaxSize(10 * 1024 * 1024);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

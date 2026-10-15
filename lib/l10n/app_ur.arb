@@ -1,0 +1,17 @@
+{
+  "@@locale": "ur",
+  "appTitle": "سٹی کیئر ہسپتال",
+  "bookAppointment": "اپوائنٹمنٹ بک کریں",
+  "liveQueue": "لائیو قطار",
+  "patientsAhead": "آپ سے پہلے مریض",
+  "estimatedWait": "متوقع انتظار",
+  "nowServing": "اب خدمت جاری",
+  "yourToken": "آپ کا ٹوکن",
+  "myAppointments": "میری اپوائنٹمنٹس",
+  "departments": "محکمے",
+  "sendOtp": "OTP بھیجیں",
+  "verifyContinue": "تصدیق کریں اور آگے بڑھیں",
+  "reconnecting": "دوبارہ جڑ رہا ہے… آخری معلوم قطار دکھائی جا رہی ہے",
+  "bookingConfirmed": "بکنگ تصدیق شدہ",
+  "language": "زبان"
+}

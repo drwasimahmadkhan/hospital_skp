@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>City Care Hospital — Token App Documentation</title>
+  <style>
+    :root {
+      --blue: #0b6e99;
+      --green: #1b9a6a;
+      --bg: #f4f8fb;
+      --card: #fff;
+      --text: #1a2b3c;
+      --muted: #5a6b7c;
+      --border: #d7e3ec;
+      --code: #0f2740;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #e8f3f8 0%, var(--bg) 220px);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 80px; }
+    header {
+      background: linear-gradient(135deg, var(--blue), var(--green));
+      color: #fff;
+      border-radius: 20px;
+      padding: 32px 28px;
+      margin-bottom: 24px;
+      box-shadow: 0 12px 32px rgba(11, 110, 153, 0.25);
+    }
+    header h1 { margin: 0 0 8px; font-size: 1.85rem; }
+    header p { margin: 0; opacity: 0.92; max-width: 40rem; }
+    .badge {
+      display: inline-block;
+      margin-top: 14px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 0.85rem;
+    }
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(244,248,251,0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    nav a {
+      text-decoration: none;
+      color: var(--blue);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+    nav a:hover { background: #e7f4fb; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      margin-bottom: 16px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      color: var(--blue);
+      font-size: 1.35rem;
+      border-bottom: 2px solid #e3eef5;
+      padding-bottom: 8px;
+    }
+    h3 { margin: 18px 0 8px; font-size: 1.05rem; }
+    p, li { color: var(--text); }
+    .muted { color: var(--muted); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+      margin: 10px 0 6px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th { background: #eef6fa; }
+    pre, code {
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.88rem;
+    }
+    pre {
+      background: var(--code);
+      color: #e8f1ff;
+      padding: 14px 16px;
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: #fbfdff;
+    }
+    .card strong { color: var(--green); display: block; margin-bottom: 4px; }
+    .callout {
+      background: #e8f7ef;
+      border-left: 4px solid var(--green);
+      padding: 12px 14px;
+      border-radius: 0 10px 10px 0;
+      margin: 12px 0;
+    }
+    .warn {
+      background: #fff7e8;
+      border-left: 4px solid #e0a100;
+    }
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 28px;
+    }
+    ol.steps li { margin-bottom: 6px; }
+    .flow {
+      background: #f7fafc;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      white-space: pre-wrap;
+      font-family: Consolas, monospace;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>City Care Hospital — Token &amp; Appointments</h1>
+      <p>
+        Complete single-hospital Flutter app: book doctors from home, auto-issue tokens (T-01…),
+        and track the live queue so patients arrive just in time.
+      </p>
+      <span class="badge">Default backend: Local (no Firebase required)</span>
+    </header>
+
+    <nav>
+      <a href="#run">Run locally</a>
+      <a href="#modes">Backend modes</a>
+      <a href="#roles">Roles</a>
+      <a href="#demo">Demo flows</a>
+      <a href="#queue">Queue logic</a>
+      <a href="#schema">Data model</a>
+      <a href="#structure">Project structure</a>
+      <a href="#screens">Screens</a>
+      <a href="#firebase">Optional Firebase</a>
+      <a href="#checklist">Testing</a>
+      <a href="#future">Future</a>
+    </nav>
+
+    <section id="run">
+      <h2>1. Run the complete project (Local mode)</h2>
+      <div class="callout">
+        <strong>You do not need Firebase</strong> to run a full working demo.
+        Local mode uses an in-memory hospital backend (<code>MockDataStore</code>) with
+        auth, booking, tokens, live queue, receptionist, doctor, and admin screens.
+      </div>
+      <pre>cd D:\GitHub\flutter2
+flutter pub get
+flutter run</pre>
+      <p class="muted">Requires Flutter SDK on PATH. Android emulator or device recommended.</p>
+      <h3>Demo login</h3>
+      <ol class="steps">
+        <li>Finish / skip onboarding</li>
+        <li>Pick <strong>Demo role</strong>: patient / receptionist / doctor / admin</li>
+        <li>Phone: <code>03001234567</code> → Send OTP</li>
+        <li>OTP: <code>123456</code> (any 4+ digits works in Local mode)</li>
+      </ol>
+    </section>
+
+    <section id="modes">
+      <h2>2. Backend modes (Firebase alternative)</h2>
+      <table>
+        <thead>
+          <tr><th>Mode</th><th>How to enable</th><th>What you get</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Local (recommended to start)</strong></td>
+            <td><code>AppConstants.useMockData = true</code><br/>(already default)</td>
+            <td>Complete app offline. OTP, token allocation, live queue streams, all roles.</td>
+          </tr>
+          <tr>
+            <td><strong>Firebase (production)</strong></td>
+            <td>Set <code>useMockData = false</code> + FlutterFire + deploy functions</td>
+            <td>Phone Auth, Firestore realtime, Cloud Functions, FCM push, multi-device sync.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>Toggle file: <code>lib/core/constants/app_constants.dart</code></p>
+      <pre>static const bool useMockData = true; // Local complete backend
+// static const bool useMockData = false; // Firebase production</pre>
+      <div class="grid">
+        <div class="card">
+          <strong>Local OTP</strong>
+          Any 4+ digit code. No SMS gateway.
+        </div>
+        <div class="card">
+          <strong>Local tokens</strong>
+          Same rules as production: per doctor/day, T-01…, duplicate guards.
+        </div>
+        <div class="card">
+          <strong>Local live queue</strong>
+          Dart streams update instantly when doctor taps Call Next.
+        </div>
+        <div class="card">
+          <strong>Local notifications</strong>
+          Written to in-app notification list (FCM later).
+        </div>
+      </div>
+    </section>
+
+    <section id="roles">
+      <h2>3. User roles</h2>
+      <table>
+        <thead><tr><th>Role</th><th>Can do</th></tr></thead>
+        <tbody>
+          <tr><td>Patient</td><td>Browse doctors, book, cancel, live queue, family members, feedback, Urdu/English</td></tr>
+          <tr><td>Receptionist</td><td>Phone/walk-in booking, check-in, skip, no-show, emergency insert</td></tr>
+          <tr><td>Doctor</td><td>Today’s list, Call Next, Complete, Skip, Pause/Break, On leave</td></tr>
+          <tr><td>Admin</td><td>Overview KPIs, doctors, departments, schedules/staff entry points</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="demo">
+      <h2>4. Demo flows</h2>
+      <h3>Patient (≤4 taps to book)</h3>
+      <div class="flow">Home → Department → Doctor → Book date → Confirmation → Live Queue</div>
+      <h3>Doctor updates everyone’s queue</h3>
+      <div class="flow">Login as doctor → Call next → Patient Live Queue updates
+(Now serving / Patients ahead / ETA)</div>
+      <h3>Receptionist same token system</h3>
+      <div class="flow">Book walk-in / phone → token in same doctor-day sequence
+→ Check-in / Skip / Emergency insert</div>
+    </section>
+
+    <section id="queue">
+      <h2>5. Token &amp; queue logic</h2>
+      <ul>
+        <li>Separate sequence per <strong>doctor + calendar day</strong>; resets at midnight</li>
+        <li>Labels: <code>T-01</code>, <code>T-02</code>, …</li>
+        <li>Statuses: <code>BOOKED → CHECKED_IN → IN_PROGRESS → COMPLETED | CANCELLED | NO_SHOW | SKIPPED</code></li>
+        <li><strong>Patients ahead</strong> = lower token numbers still BOOKED/CHECKED_IN</li>
+        <li><strong>ETA</strong> = patients ahead × average consult minutes</li>
+        <li>Grace no-show default: <strong>10 minutes</strong> after call</li>
+        <li>“Turn near” alert threshold: <strong>3</strong> patients ahead</li>
+        <li>Cancel/reschedule cutoff: <strong>2 hours</strong></li>
+        <li>Max bookings per phone per day: <strong>3</strong></li>
+        <li>No double booking: same patient + same doctor + same day</li>
+      </ul>
+    </section>
+
+    <section id="schema">
+      <h2>6. Data model (same shape Local ↔ Firebase)</h2>
+      <p class="muted">Local mode keeps these entities in memory. Firebase maps them to Firestore collections.</p>
+      <table>
+        <thead><tr><th>Entity</th><th>Key fields</th></tr></thead>
+        <tbody>
+          <tr><td>users</td><td>id, phone, role, displayName, languageCode, fcmTokens</td></tr>
+          <tr><td>patients</td><td>userId, name, age, gender, phone</td></tr>
+          <tr><td>family_members</td><td>ownerUserId, name, age, relation</td></tr>
+          <tr><td>departments</td><td>nameEn, nameUr, icon, sortOrder</td></tr>
+          <tr><td>doctors</td><td>departmentId, qualification, feePkr, avgConsultMinutes, maxTokensPerDay</td></tr>
+          <tr><td>doctor_schedules</td><td>weekday, start/end, breaks, maxTokens</td></tr>
+          <tr><td>appointments</td><td>doctorId, date, tokenNumber, tokenLabel, status, source</td></tr>
+          <tr><td>queue_state</td><td>id = doctorId_date, currentToken, lastIssued, avgConsult, paused</td></tr>
+          <tr><td>notifications</td><td>userId, title, body, type, read</td></tr>
+          <tr><td>feedback</td><td>appointmentId, rating 1–5, comment</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="structure">
+      <h2>7. Project structure</h2>
+<pre>flutter2/
+├── docs/index.html          ← this single documentation file
+├── DOCUMENTATION.md         ← markdown index (links here)
+├── lib/
+│   ├── main.dart / app.dart
+│   ├── core/                constants, theme, router, utils
+│   └── features/
+│       ├── shared/data/mock_data_store.dart   ← Local backend
+│       ├── auth, home, doctors, booking
+│       ├── queue (LIVE QUEUE)
+│       ├── receptionist, doctor, admin
+│       └── profile, notifications, feedback
+├── functions/               ← only needed for Firebase mode
+├── firestore.rules          ← only needed for Firebase mode
+└── test/                    phone + token unit tests</pre>
+    </section>
+
+    <section id="screens">
+      <h2>8. Screens</h2>
+      <div class="grid">
+        <div class="card"><strong>Patient</strong>Splash, Onboarding, Login/OTP, Home, Doctor list/profile, Date booking, Confirmation, My appointments, Live queue, Notifications, Profile, Family, Settings (EN/UR), Feedback</div>
+        <div class="card"><strong>Receptionist</strong>Dashboard, book phone/walk-in, today’s queue actions</div>
+        <div class="card"><strong>Doctor</strong>Today list, Call Next, Complete, Skip, Pause, On leave</div>
+        <div class="card"><strong>Admin</strong>KPIs, doctors, departments, manage entry points</div>
+      </div>
+    </section>
+
+    <section id="firebase">
+      <h2>9. Optional: switch to Firebase later</h2>
+      <p>Only when you need real OTP SMS, multi-device sync, and push notifications:</p>
+      <ol class="steps">
+        <li>Create Firebase project <code>hospital-token-app</code></li>
+        <li><code>flutterfire configure</code></li>
+        <li>Set <code>useMockData = false</code></li>
+        <li><code>cd functions && npm install && npm run build</code></li>
+        <li><code>firebase deploy</code></li>
+      </ol>
+      <p>Cloud Functions included: <code>allocateToken</code>, <code>callNext</code>, status updates, grace no-show, reminders, reports.</p>
+      <p class="muted">Markdown deep-dives (optional): see <code>docs/01</code>…<code>docs/10</code> and <code>DOCUMENTATION.md</code>.</p>
+    </section>
+
+    <section id="checklist">
+      <h2>10. Testing checklist (Local)</h2>
+      <ul>
+        <li>☐ Patient books and receives token</li>
+        <li>☐ Duplicate same doctor/day blocked</li>
+        <li>☐ Live queue shows serving / ahead / ETA</li>
+        <li>☐ Doctor Call Next updates patient screen</li>
+        <li>☐ Receptionist walk-in shares queue</li>
+        <li>☐ Emergency insert prioritised</li>
+        <li>☐ Cancel appointment works</li>
+        <li>☐ Urdu language flips RTL</li>
+        <li>☐ Admin KPIs render</li>
+        <li>☐ Unit tests: <code>flutter test</code></li>
+      </ul>
+    </section>
+
+    <section id="future">
+      <h2>11. Future enhancements</h2>
+      <ul>
+        <li>JazzCash / Easypaisa / card payments</li>
+        <li>Video consultation</li>
+        <li>Lab reports &amp; e-prescriptions</li>
+        <li>Home screen widget for live token</li>
+        <li>Hive/SQLite persistence for Local mode across app restarts</li>
+      </ul>
+    </section>
+
+    <footer>
+      City Care Hospital Token App · Open this file in any browser ·
+      Path: <code>docs/index.html</code>
+    </footer>
+  </div>
+</body>
+</html>

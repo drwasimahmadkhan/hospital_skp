@@ -1,0 +1,209 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helpers ───────────────────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+
+    function hasRole(role) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(uid()))
+        && userDoc().role == role;
+    }
+
+    function hasAnyRole(roles) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(uid()))
+        && userDoc().role in roles;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isDoctor() {
+      return hasRole('doctor');
+    }
+
+    function isReceptionist() {
+      return hasRole('receptionist');
+    }
+
+    function isStaff() {
+      return hasAnyRole(['admin', 'receptionist', 'doctor', 'nurse']);
+    }
+
+    function isPatient() {
+      return hasRole('patient');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && uid() == userId;
+    }
+
+    function patientBelongsToUser(patientId) {
+      let p = get(/databases/$(database)/documents/patients/$(patientId)).data;
+      return p.userId == uid();
+    }
+
+    function doctorProfileId() {
+      return userDoc().doctorId;
+    }
+
+    function isAssignedDoctor(doctorId) {
+      return isDoctor() && doctorProfileId() == doctorId;
+    }
+
+    // Immutable audit fields on create
+    function validCreateTimestamps() {
+      return request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function validUpdateTimestamp() {
+      return request.resource.data.updatedAt == request.time
+        && request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    // ─── users ─────────────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isStaff();
+      allow create: if isOwner(userId)
+        && request.resource.data.keys().hasAll(['role', 'displayName', 'phone', 'locale', 'createdAt', 'updatedAt'])
+        && request.resource.data.role == 'patient'
+        && validCreateTimestamps();
+      allow update: if (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'doctorId', 'staffId']))
+        || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── patients ──────────────────────────────────────────────────────────
+    match /patients/{patientId} {
+      allow read: if isStaff()
+        || (isPatient() && resource.data.userId == uid());
+      allow create: if isPatient()
+        && request.resource.data.userId == uid()
+        && validCreateTimestamps();
+      allow update: if (isPatient() && resource.data.userId == uid())
+        || isStaff();
+      allow delete: if isAdmin()
+        || (isPatient() && resource.data.userId == uid());
+    }
+
+    // ─── family_members ────────────────────────────────────────────────────
+    match /family_members/{memberId} {
+      allow read: if isStaff()
+        || (isSignedIn() && resource.data.ownerUserId == uid());
+      allow create: if isPatient()
+        && request.resource.data.ownerUserId == uid()
+        && validCreateTimestamps();
+      allow update, delete: if isStaff()
+        || (isPatient() && resource.data.ownerUserId == uid());
+    }
+
+    // ─── departments ───────────────────────────────────────────────────────
+    match /departments/{departmentId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ─── doctors ───────────────────────────────────────────────────────────
+    match /doctors/{doctorId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ─── doctor_schedules ──────────────────────────────────────────────────
+    match /doctor_schedules/{scheduleId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() || isReceptionist();
+    }
+
+    // ─── staff ─────────────────────────────────────────────────────────────
+    match /staff/{staffId} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+
+    // ─── appointments ──────────────────────────────────────────────────────
+    // Token allocation & status transitions are enforced in Cloud Functions.
+    match /appointments/{appointmentId} {
+      allow read: if isStaff()
+        || (isPatient() && resource.data.patientUserId == uid())
+        || (isDoctor() && isAssignedDoctor(resource.data.doctorId));
+      allow create: if false;
+      allow update: if isStaff()
+        || (isDoctor() && isAssignedDoctor(resource.data.doctorId)
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['patientNotes', 'updatedAt']));
+      allow delete: if isAdmin();
+    }
+
+    // ─── daily_token_counters (server-only writes) ─────────────────────────
+    match /daily_token_counters/{counterId} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
+    // ─── queue_state ───────────────────────────────────────────────────────
+    // Clients must not mutate queue; only Cloud Functions or doctor/receptionist.
+    match /queue_state/{doctorDayId} {
+      allow read: if isSignedIn();
+      allow create: if false;
+      allow update: if isAdmin()
+        || isReceptionist()
+        || (isDoctor() && isAssignedDoctor(resource.data.doctorId));
+      allow delete: if isAdmin();
+    }
+
+    // ─── notifications ───────────────────────────────────────────────────
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == uid();
+      allow create: if false;
+      allow update: if isSignedIn()
+        && resource.data.userId == uid()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt', 'updatedAt']);
+      allow delete: if isAdmin() || (resource.data.userId == uid());
+    }
+
+    // ─── feedback ──────────────────────────────────────────────────────────
+    match /feedback/{feedbackId} {
+      allow read: if isStaff()
+        || (isSignedIn() && resource.data.userId == uid());
+      allow create: if isSignedIn()
+        && request.resource.data.userId == uid()
+        && validCreateTimestamps();
+      allow update, delete: if isAdmin();
+    }
+
+    // ─── audit_logs ────────────────────────────────────────────────────────
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ─── fcm_tokens (device registration) ──────────────────────────────────
+    match /fcm_tokens/{tokenId} {
+      allow read: if isOwner(resource.data.userId);
+      allow create: if isSignedIn()
+        && request.resource.data.userId == uid();
+      allow update, delete: if isSignedIn()
+        && resource.data.userId == uid();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

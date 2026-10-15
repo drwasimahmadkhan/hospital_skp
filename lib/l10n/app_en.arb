@@ -1,0 +1,17 @@
+{
+  "@@locale": "en",
+  "appTitle": "City Care Hospital",
+  "bookAppointment": "Book appointment",
+  "liveQueue": "Live queue",
+  "patientsAhead": "Patients ahead",
+  "estimatedWait": "Estimated wait",
+  "nowServing": "Now serving",
+  "yourToken": "Your token",
+  "myAppointments": "My appointments",
+  "departments": "Departments",
+  "sendOtp": "Send OTP",
+  "verifyContinue": "Verify & continue",
+  "reconnecting": "Reconnecting… showing last known queue state",
+  "bookingConfirmed": "Booking confirmed",
+  "language": "Language"
+}
